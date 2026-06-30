@@ -1,0 +1,5 @@
+- This is Next.js 16 — check node_modules/next/dist/docs/ before routing code
+- Server Components for all data fetching — no client-side useEffect for data
+- "use client" only for: useState, useEffect, event handlers, Framer Motion
+- Parallel fetches: Promise.all([...]) in Server Components
+- All forms: react-hook-form + zod schema

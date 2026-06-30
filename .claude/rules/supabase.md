@@ -1,0 +1,6 @@
+- RLS required on every new table in the same migration
+- maybeSingle() not single() for queries that may return no rows
+- Upsert on conflict for all Edge Function inserts (idempotent)
+- Never edit committed migration files — always new sequential file
+- bun run db:types after every migration
+- pg_cron schedule in UTC — convert from CEST for user-facing copy

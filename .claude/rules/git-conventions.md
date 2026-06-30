@@ -1,0 +1,4 @@
+- Branch naming: feat/, fix/, refactor/, docs/, chore/
+- Commit format: feat(scope): short description (Conventional Commits)
+- Never push directly to main
+- PR required for all changes to main

@@ -1,0 +1,4 @@
+- Every /api/ route: verify getUser() + jungechu@gmail.com whitelist
+- Edge Functions: return 503 if required env var missing
+- Never log sensitive data (API keys, user emails, Supabase keys)
+- .env.local and CLAUDE.local.md in .gitignore — check before every commit

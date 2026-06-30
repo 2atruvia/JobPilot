@@ -1,0 +1,18 @@
+name: Keep Alive
+
+on:
+  schedule:
+    # Every Monday at 08:00 UTC — prevents Supabase free-tier project from pausing
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Edge Function
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping followup-checker
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}/functions/v1/followup-checker" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"

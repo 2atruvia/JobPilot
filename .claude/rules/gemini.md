@@ -1,0 +1,7 @@
+- All Gemini calls go through `lib/gemini.ts` — never inline fetch
+- Model: always `process.env.GEMINI_MODEL` with fallback `gemini-2.5-flash`
+- Response format: always `responseMimeType: 'application/json'`
+- Temperature: 0.2 for scoring/classification, 0.7 for creative generation
+- Max tokens: 512 for scoring, 4096 for CV tailoring
+- Parse failures: log to activity_log, do NOT throw — mark job as scoring_failed
+- Prompt changes: document before/after in LEARNINGS.md

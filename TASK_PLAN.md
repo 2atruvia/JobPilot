@@ -1,0 +1,12 @@
+# Task Plan
+- [x] Phase 1: Supabase project setup + migration push
+- [x] Phase 2: Scaffold complete Next.js structure
+- [x] Phase 3: Sidebar layout + Auth
+- [x] Phase 4: /profile + /resume data entry UI
+- [x] Phase 5: job-fetcher Edge Function
+- [x] Phase 6: job-scorer Edge Function (Gemini)
+- [x] Phase 7: /jobs table + filters + [id] detail
+- [x] Phase 8: cv-tailor Edge Function + UI button
+- [x] Phase 9: /applications Kanban board
+- [x] Phase 10: /dashboard animated stats + Realtime feed
+- [x] Phase 11: followup-checker + GitHub Actions
