@@ -87,14 +87,16 @@ Return ONLY valid JSON:
         generationConfig: {
           responseMimeType: 'application/json',
           temperature: 0.7,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192,
         },
       }),
     },
   )
 
   const geminiData = await response.json()
-  const text = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
+  const parts = geminiData.candidates?.[0]?.content?.parts ?? []
+  const text = (parts.find((p: { thought?: boolean; text?: string }) => !p.thought)?.text)
+    ?? parts[parts.length - 1]?.text
 
   let result
   try {

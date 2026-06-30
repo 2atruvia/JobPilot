@@ -43,14 +43,18 @@ serve(async () => {
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.2,
-            maxOutputTokens: 512,
+            maxOutputTokens: 2048,
           },
         }),
       },
     )
 
     const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text
+    // Gemini 2.5 Flash Preview returns thinking tokens in parts[0] (thought: true)
+    // and the actual response in the last non-thought part
+    const parts = data.candidates?.[0]?.content?.parts ?? []
+    const text = (parts.find((p: { thought?: boolean; text?: string }) => !p.thought)?.text)
+      ?? parts[parts.length - 1]?.text
 
     try {
       const result = JSON.parse(text)
