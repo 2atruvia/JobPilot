@@ -51,3 +51,19 @@ export async function setActiveVersion(id: string) {
   if (error) throw new Error(error.message)
   revalidatePath('/resume')
 }
+
+export async function saveResumeFileUrl(url: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase
+    .from('profile')
+    .update({ resume_file_url: url, updated_at: new Date().toISOString() })
+    .eq('user_id', user.id)
+
+  if (error) throw new Error(error.message)
+  revalidatePath('/resume')
+}

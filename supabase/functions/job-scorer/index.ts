@@ -43,7 +43,7 @@ serve(async () => {
           generationConfig: {
             responseMimeType: 'application/json',
             temperature: 0.2,
-            maxOutputTokens: 2048,
+            maxOutputTokens: 768,
           },
         }),
       },
@@ -58,7 +58,9 @@ serve(async () => {
 
     try {
       const result = JSON.parse(text)
-      await supabase.from('jobs').update({
+
+      // deno-lint-ignore no-explicit-any
+      const update: Record<string, any> = {
         relevance_score: result.score,
         score_reasoning: result.reasoning,
         spain_valencia_compatible: result.spain_compatible,
@@ -67,7 +69,24 @@ serve(async () => {
         is_disqualified: result.disqualified,
         disqualify_reason: result.disqualify_reason,
         scored_at: new Date().toISOString(),
-      }).eq('id', job.id)
+        employment_type: result.employment_type ?? null,
+        timezone_requirement: result.timezone_requirement ?? null,
+        experience_years_required: result.experience_years ?? null,
+      }
+
+      // Only override company if currently Unknown/empty and AI found a better value
+      if ((!job.company || job.company === 'Unknown') && result.extracted_company) {
+        update.company = result.extracted_company
+        update.company_source = 'ai_extracted'
+      }
+
+      // Only fill salary min/max if fetcher didn't already parse them
+      if (!job.salary_min_usd && result.extracted_salary_min_usd) {
+        update.salary_min_usd = result.extracted_salary_min_usd
+        update.salary_max_usd = result.extracted_salary_max_usd ?? null
+      }
+
+      await supabase.from('jobs').update(update).eq('id', job.id)
       scored++
     } catch (e) {
       await supabase.from('activity_log').insert({
@@ -125,7 +144,13 @@ ${(profile.blocklist_keywords ?? []).map((k: string) => `- "${k}"`).join('\n') |
   "reasoning": "<2 sentences explaining the score>",
   "matched_keywords": ["keyword1", "keyword2"],
   "disqualified": <true|false>,
-  "disqualify_reason": "<null or reason>"
+  "disqualify_reason": "<null or reason>",
+  "employment_type": <"full_time"|"contract"|"freelance"|"part_time"|null>,
+  "timezone_requirement": <"us_only"|"us_friendly"|"flexible"|null>,
+  "experience_years": <integer or null>,
+  "extracted_company": <"Company Name" or null — only fill if job company is "Unknown" or empty>,
+  "extracted_salary_min_usd": <integer or null — annual USD minimum parsed from description>,
+  "extracted_salary_max_usd": <integer or null — annual USD maximum parsed from description>
 }
 `
 }

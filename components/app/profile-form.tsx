@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 const formSchema = z.object({
   full_name: z.string().min(1, 'Name is required'),
+  linkedin_url: z.string().url('Must be a valid URL').or(z.literal('')),
   current_location: z.string(),
   target_location: z.string(),
   target_location_alt: z.string(),
@@ -26,6 +27,7 @@ const formSchema = z.object({
   skills_raw: z.string(),
   blocklist_keywords_raw: z.string(),
   spain_remote_keywords_raw: z.string(),
+  job_fetch_tags_raw: z.string(),
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -57,6 +59,7 @@ export function ProfileForm({ profile }: Props) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: profile?.full_name ?? '',
+      linkedin_url: profile?.linkedin_url ?? '',
       current_location: profile?.current_location ?? '',
       target_location: profile?.target_location ?? '',
       target_location_alt: profile?.target_location_alt ?? '',
@@ -69,6 +72,7 @@ export function ProfileForm({ profile }: Props) {
       skills_raw: toComma(profile?.skills),
       blocklist_keywords_raw: toComma(profile?.blocklist_keywords),
       spain_remote_keywords_raw: toComma(profile?.spain_remote_keywords),
+      job_fetch_tags_raw: toComma(profile?.job_fetch_tags) || 'account-manager, marketing, ecommerce, management',
     },
   })
 
@@ -79,6 +83,7 @@ export function ProfileForm({ profile }: Props) {
       await updateProfile(
         {
           full_name: values.full_name,
+          linkedin_url: values.linkedin_url || null,
           current_location: values.current_location || null,
           target_location: values.target_location || null,
           target_location_alt: values.target_location_alt || null,
@@ -91,6 +96,7 @@ export function ProfileForm({ profile }: Props) {
           skills: fromComma(values.skills_raw),
           blocklist_keywords: fromComma(values.blocklist_keywords_raw),
           spain_remote_keywords: fromComma(values.spain_remote_keywords_raw),
+          job_fetch_tags: fromComma(values.job_fetch_tags_raw),
         },
         profile?.id
       )
@@ -127,6 +133,11 @@ export function ProfileForm({ profile }: Props) {
               <option value="work_from_anywhere">Work From Anywhere</option>
               <option value="spain_only">Spain Only</option>
             </Select>
+          </div>
+          <div className="col-span-2 space-y-1.5">
+            <Label htmlFor="linkedin_url">LinkedIn URL</Label>
+            <Input id="linkedin_url" type="url" placeholder="https://linkedin.com/in/yourprofile" {...register('linkedin_url')} />
+            {errors.linkedin_url && <p className="text-xs text-destructive">{errors.linkedin_url.message}</p>}
           </div>
         </CardContent>
       </Card>
@@ -193,6 +204,25 @@ export function ProfileForm({ profile }: Props) {
           <div className="space-y-1.5">
             <Label htmlFor="spain_remote_keywords_raw">Spain-Remote Positive Keywords</Label>
             <Input id="spain_remote_keywords_raw" placeholder="work from anywhere, fully remote" {...register('spain_remote_keywords_raw')} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Job Discovery</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="job_fetch_tags_raw">Fetch Tags (comma-separated)</Label>
+            <Input
+              id="job_fetch_tags_raw"
+              placeholder="account-manager, marketing, ecommerce, management"
+              {...register('job_fetch_tags_raw')}
+            />
+            <p className="text-xs text-muted-foreground">
+              Tags sent to RemoteOK &amp; Jobicy APIs. Controls which job categories are fetched daily.
+            </p>
           </div>
         </CardContent>
       </Card>

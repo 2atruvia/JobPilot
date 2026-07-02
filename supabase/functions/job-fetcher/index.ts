@@ -11,33 +11,22 @@ interface JobCandidate {
   posted_at?: string
 }
 
-const SOURCES = [
-  {
-    name: 'remoteok',
-    url: 'https://remoteok.com/api?tags=account-manager,marketing,ecommerce',
-    parser: 'remoteok_json',
-  },
-  {
-    name: 'workingnomads',
-    url: 'https://www.workingnomads.com/api/exposed_jobs/?category=management&category=marketing',
-    parser: 'workingnomads_json',
-  },
-  {
-    name: 'realworkfromanywhere',
-    url: 'https://www.realworkfromanywhere.com/jobs.json',
-    parser: 'generic_json',
-  },
-  {
-    name: 'weworkremotely',
-    url: 'https://weworkremotely.com/categories/remote-sales-and-marketing-jobs.rss',
-    parser: 'rss_xml',
-  },
-  {
-    name: 'jobicy',
-    url: 'https://jobicy.com/api/v2/remote-jobs?count=20&tag=account-manager,marketing,ecommerce',
-    parser: 'jobicy_json',
-  },
+const DEFAULT_FETCH_TAGS = ['account-manager', 'marketing', 'ecommerce', 'management']
+
+const TECH_TITLE_BLOCKLIST = [
+  'software engineer', 'software developer', 'engineer', 'developer',
+  'devops', 'architect', 'data scientist', 'machine learning', 'backend',
+  'frontend', 'full stack', 'fullstack', 'ios developer', 'android developer',
+  'qa engineer', 'site reliability', 'platform engineer', 'cloud engineer',
+  'data engineer', 'security engineer',
 ]
+
+function isTitleRelevant(title: string, targetRoles: string[]): boolean {
+  const t = title.toLowerCase()
+  const isTech = TECH_TITLE_BLOCKLIST.some((kw) => t.includes(kw))
+  if (!isTech) return true
+  return targetRoles.some((role) => t.includes(role.toLowerCase()))
+}
 
 const HARD_DISQUALIFIERS = [
   'must be located in', 'us citizens only in us', 'requires clearance',
@@ -138,7 +127,13 @@ function parseJobicy(data: any): JobCandidate[] {
 
 // --- Source dispatcher ---
 
-async function fetchSource(source: typeof SOURCES[number]): Promise<JobCandidate[]> {
+interface Source {
+  name: string
+  url: string
+  parser: string
+}
+
+async function fetchSource(source: Source): Promise<JobCandidate[]> {
   const res = await fetch(source.url, {
     headers: { 'User-Agent': 'JobPilot/1.0 (job search automation)' },
   })
@@ -168,7 +163,44 @@ serve(async () => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  const results = { total: 0, new: 0, duplicate: 0, errors: [] as string[] }
+  const { data: profileData } = await supabase
+    .from('profile')
+    .select('job_fetch_tags, target_roles')
+    .maybeSingle()
+
+  const fetchTags: string[] = profileData?.job_fetch_tags ?? DEFAULT_FETCH_TAGS
+  const targetRoles: string[] = profileData?.target_roles ?? []
+  const tagStr = fetchTags.join(',')
+
+  const SOURCES: Source[] = [
+    {
+      name: 'remoteok',
+      url: `https://remoteok.com/api?tags=${tagStr}`,
+      parser: 'remoteok_json',
+    },
+    {
+      name: 'workingnomads',
+      url: 'https://www.workingnomads.com/api/exposed_jobs/?category=management&category=marketing',
+      parser: 'workingnomads_json',
+    },
+    {
+      name: 'realworkfromanywhere',
+      url: 'https://www.realworkfromanywhere.com/jobs.json',
+      parser: 'generic_json',
+    },
+    {
+      name: 'weworkremotely',
+      url: 'https://weworkremotely.com/categories/remote-sales-and-marketing-jobs.rss',
+      parser: 'rss_xml',
+    },
+    {
+      name: 'jobicy',
+      url: `https://jobicy.com/api/v2/remote-jobs?count=20&tag=${tagStr}`,
+      parser: 'jobicy_json',
+    },
+  ]
+
+  const results = { total: 0, new: 0, duplicate: 0, filtered: 0, errors: [] as string[] }
 
   for (const source of SOURCES) {
     let jobs: JobCandidate[] = []
@@ -176,6 +208,12 @@ serve(async () => {
       jobs = await fetchSource(source)
 
       for (const job of jobs) {
+        if (!isTitleRelevant(job.title, targetRoles)) {
+          results.filtered++
+          results.total++
+          continue
+        }
+
         const descLower = (job.description_raw ?? '').toLowerCase()
         const isDisqualified = HARD_DISQUALIFIERS.some((kw) => descLower.includes(kw))
         const remoteAbroadScore = REMOTE_ABROAD_SIGNALS.filter((s) => descLower.includes(s)).length

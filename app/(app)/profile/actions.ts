@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 
 const profileSchema = z.object({
   full_name: z.string().min(1, 'Name is required'),
+  linkedin_url: z.string().url().optional().nullable(),
   current_location: z.string().optional().nullable(),
   target_location: z.string().optional().nullable(),
   target_location_alt: z.string().optional().nullable(),
@@ -18,6 +19,7 @@ const profileSchema = z.object({
   skills: z.array(z.string()).optional().nullable(),
   blocklist_keywords: z.array(z.string()).optional().nullable(),
   spain_remote_keywords: z.array(z.string()).optional().nullable(),
+  job_fetch_tags: z.array(z.string()).optional().nullable(),
 })
 
 export type ProfilePayload = z.infer<typeof profileSchema>

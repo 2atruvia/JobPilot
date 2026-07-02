@@ -8,6 +8,36 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
+const EMPLOYMENT_LABELS: Record<string, string> = {
+  full_time: 'Full-time',
+  contract: 'Contract',
+  freelance: 'Freelance',
+  part_time: 'Part-time',
+}
+
+const EMPLOYMENT_COLORS: Record<string, string> = {
+  full_time: 'bg-muted text-muted-foreground',
+  contract: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  freelance: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  part_time: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+}
+
+const TIMEZONE_LABELS: Record<string, string> = {
+  us_only: 'US timezone required',
+  us_friendly: 'US-friendly hours',
+  flexible: 'Flexible timezone',
+  any: 'Any timezone',
+}
+
+function formatSalary(min: number | null, max: number | null, text: string | null): string | null {
+  if (min) {
+    const minStr = `$${Math.round(min / 1000)}k`
+    const maxStr = max ? ` – $${Math.round(max / 1000)}k` : '+'
+    return minStr + maxStr
+  }
+  return text || null
+}
+
 export default async function JobDetailPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
@@ -25,6 +55,9 @@ export default async function JobDetailPage({ params }: Props) {
       ? 'text-yellow-700 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/40'
       : 'text-muted-foreground bg-muted'
 
+  const salaryDisplay = formatSalary(job.salary_min_usd, job.salary_max_usd, job.salary_text)
+  const isCompanyInferred = job.company_source === 'ai_extracted' || job.company_source === 'domain_extracted'
+
   return (
     <div className="flex flex-col gap-6 max-w-3xl">
       {/* Back */}
@@ -35,9 +68,17 @@ export default async function JobDetailPage({ params }: Props) {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded px-2 py-0.5 text-sm font-mono font-semibold ${scoreBadgeClass}`}>
+          <span
+            className={`rounded px-2 py-0.5 text-sm font-mono font-semibold ${scoreBadgeClass}`}
+            title={job.score_reasoning ?? undefined}
+          >
             {score !== null ? score : '—'}
           </span>
+          {job.employment_type && (
+            <span className={`rounded px-2 py-0.5 text-xs font-medium ${EMPLOYMENT_COLORS[job.employment_type] ?? 'bg-muted text-muted-foreground'}`}>
+              {EMPLOYMENT_LABELS[job.employment_type] ?? job.employment_type}
+            </span>
+          )}
           {job.spain_valencia_compatible && (
             <Badge variant="secondary">🇪🇸 Spain-compatible</Badge>
           )}
@@ -49,13 +90,24 @@ export default async function JobDetailPage({ params }: Props) {
           )}
         </div>
         <h1 className="text-2xl font-semibold text-foreground">{job.title}</h1>
-        <p className="text-lg text-muted-foreground">{job.company}</p>
+        <p className="text-lg text-muted-foreground">
+          {job.company}
+          {isCompanyInferred && (
+            <span className="ml-1.5 text-xs text-muted-foreground/60 font-normal">(inferred)</span>
+          )}
+        </p>
         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
           {job.location_text && (
             <span>📍 {job.location_text}</span>
           )}
-          {job.salary_text && (
-            <span className="font-mono">💵 {job.salary_text}</span>
+          {salaryDisplay && (
+            <span className="font-mono">💵 {salaryDisplay}</span>
+          )}
+          {job.timezone_requirement && TIMEZONE_LABELS[job.timezone_requirement] && (
+            <span>🕐 {TIMEZONE_LABELS[job.timezone_requirement]}</span>
+          )}
+          {job.experience_years_required && (
+            <span>🎯 {job.experience_years_required}+ years required</span>
           )}
           {job.source && <span>Source: {job.source}</span>}
         </div>

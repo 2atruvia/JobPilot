@@ -1,8 +1,8 @@
-import { getResumeVersions } from '@/lib/supabase/queries'
+import { getResumeVersions, getProfile } from '@/lib/supabase/queries'
 import { ResumeEditor } from '@/components/app/resume-editor'
 
 export default async function ResumePage() {
-  const versions = await getResumeVersions()
+  const [versions, profile] = await Promise.all([getResumeVersions(), getProfile()])
 
   return (
     <div className="space-y-6">
@@ -12,7 +12,7 @@ export default async function ResumePage() {
           Manage versioned Markdown resumes. The active version is used by the AI tailor.
         </p>
       </div>
-      <ResumeEditor versions={versions} />
+      <ResumeEditor versions={versions} resumeFileUrl={profile?.resume_file_url ?? null} />
     </div>
   )
 }

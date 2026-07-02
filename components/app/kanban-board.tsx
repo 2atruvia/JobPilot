@@ -122,7 +122,11 @@ export function KanbanBoard({ initialApplications }: Props) {
                     key={app.id}
                     draggable
                     onDragStart={(e) => onDragStart(e, app.id)}
-                    className={`rounded-md border border-border bg-card p-3 cursor-grab active:cursor-grabbing shadow-sm space-y-1.5 transition-opacity ${draggingId === app.id ? 'opacity-40' : 'opacity-100'}`}
+                    onClick={() => {
+                      if (draggingId) return
+                      router.push(`/applications/${app.id}`)
+                    }}
+                    className={`rounded-md border border-border bg-card p-3 cursor-pointer shadow-sm space-y-1.5 transition-all hover:border-primary/40 hover:shadow-md active:scale-[0.98] ${draggingId === app.id ? 'opacity-40 cursor-grabbing' : 'opacity-100'}`}
                   >
                     <div className="flex items-start justify-between gap-1">
                       <p className="text-xs font-medium text-foreground line-clamp-2 leading-snug">
@@ -130,15 +134,20 @@ export function KanbanBoard({ initialApplications }: Props) {
                       </p>
                       <ScoreBadge score={app.jobs?.relevance_score ?? null} />
                     </div>
-                    <p className="text-xs text-muted-foreground">{app.jobs?.company ?? '—'}</p>
+                    {app.jobs?.company && app.jobs.company !== 'Unknown' && (
+                      <p className="text-xs text-muted-foreground">{app.jobs.company}</p>
+                    )}
                     {app.applied_at && (
                       <p className="text-[10px] text-muted-foreground">
                         Applied {new Date(app.applied_at).toLocaleDateString()}
                       </p>
                     )}
-                    {app.jobs?.spain_valencia_compatible && (
-                      <span className="text-[10px] text-muted-foreground">🇪🇸</span>
-                    )}
+                    <div className="flex items-center justify-between">
+                      {app.jobs?.spain_valencia_compatible && (
+                        <span className="text-[10px] text-muted-foreground">🇪🇸</span>
+                      )}
+                      <span className="text-[10px] text-primary/60 ml-auto">View →</span>
+                    </div>
                   </div>
                 ))}
               </div>
